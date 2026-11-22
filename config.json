@@ -1,0 +1,6 @@
+{
+  "simulation": {"seed": 42, "duration_seconds": 10.0, "step_seconds": 0.01, "queue_capacity_packets": 256},
+  "network": {"primary_capacity_mbps": 100.0, "backup_capacity_mbps": 80.0, "access_capacity_mbps": 1000.0, "server_capacity_mbps": 1000.0, "propagation_ms": 1.0},
+  "controller": {"congestion_threshold": 0.8, "recovery_threshold": 0.6, "monitoring_interval_seconds": 1.0},
+  "traffic": {"control_pps": 40, "telemetry_pps": 80, "video_pps": 500, "bulk_pps": 1200}
+}
