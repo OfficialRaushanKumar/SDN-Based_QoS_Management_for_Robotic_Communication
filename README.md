@@ -1,120 +1,161 @@
-# SDN QoS Robotic Communication (Simulation)
+# SDN-Based QoS Management for Robotic Communication
 
-A Python-based SDN case study that simulates QoS-aware traffic handling for robotic communication workloads.
+A simulation-first SDN project that evaluates how QoS policies improve robotic communication performance under congestion, failover, and mixed-traffic conditions.
 
-> This project is a **network simulation** (not a hardware/OpenFlow deployment). It does not require Mininet, OVS, or physical switches.
+> **Important:** This repository is a **Python simulation**, not a real OpenFlow/Mininet/OVS deployment.
 
-## Overview
+---
 
-The system models three SDN layers:
+## 1) What this project does
 
-- **Application layer**: Streamlit dashboard for monitoring, controls, and experiment analytics
-- **Control layer**: centralized SDN controller and policy managers (`controller/`)
-- **Infrastructure layer**: virtual hosts, links, switches, queues, and packet flow simulation (`simulation/`)
+This system compares two modes:
 
-The simulator evaluates baseline vs QoS-aware behavior under normal load, congestion, video-heavy traffic, failover, and scale-up scenarios.
+- **Baseline mode:** shared best-effort behavior
+- **Proposed mode:** QoS-aware scheduling + congestion response + failover routing
 
-## QoS traffic classes
+It helps demonstrate how class-aware forwarding can reduce control-plane latency and improve reliability for critical robotic traffic.
 
-| Class | Type | DSCP | Queue |
-|---|---|---:|---:|
-| A | Critical Control | 46 | Q0 |
-| B | Telemetry | 26 | Q1 |
-| C | Video/Vision | 34 | Q2 |
-| D | Best Effort/Bulk | 0 | Q3 |
+---
 
-## Architecture summary
+## 2) Core features
 
-- Topology includes hosts/robots connected through virtual switches (`S1`, `S2`, `S3`, `S4`)
-- Normal path uses `S1 -> S2 -> S3`
-- On primary-link failure, traffic is rerouted via `S1 -> S4 -> S3`
-- Congestion and recovery use hysteresis-based state transitions
-- Metrics include latency, jitter, packet delivery/loss, and throughput
+- Centralized SDN controller logic for routing, QoS, and congestion handling
+- Discrete-event network simulator with virtual hosts, links, queues, and switches
+- Streamlit dashboard for live monitoring and interactive controls
+- FastAPI backend for topology, status, metrics, events, and experiment APIs
+- Built-in experiment suite with baseline vs proposed comparisons
+- CSV/JSON/HTML export of results
 
-## Project structure
+---
 
-- `backend/` - FastAPI service and API routes
-- `dashboard/` - Streamlit web UI
-- `controller/` - SDN logic (routing, QoS, congestion, flow/topology managers)
-- `simulation/` - discrete-event packet/network simulator
-- `traffic_generator/` - deterministic traffic workload generation
-- `monitoring/` - metric collection and performance analysis
-- `experiments/` - scenario runners and result export
-- `tests/` - pytest unit tests
-- `scripts/` - setup, start/stop, and experiment scripts (PowerShell)
-- `results/` - generated CSV/JSON/HTML outputs
+## 3) QoS traffic classes
 
-## Requirements
+| Class | Traffic Type | DSCP | Queue | Priority |
+|---|---|---:|---:|---|
+| A | Critical Control | 46 | Q0 | Highest |
+| B | Telemetry | 26 | Q1 | High |
+| C | Video / Vision | 34 | Q2 | Medium |
+| D | Bulk / Best Effort | 0 | Q3 | Lowest |
 
-- Windows 10/11 (scripts provided for PowerShell)
+---
+
+## 4) Architecture at a glance
+
+### Layers
+
+- **Application layer:** dashboard views and controls
+- **Control layer:** controller managers (`controller/`)
+- **Infrastructure layer:** packet-level simulation (`simulation/`)
+
+### Topology behavior
+
+- Normal path: `S1 -> S2 -> S3`
+- Backup path on failure: `S1 -> S4 -> S3`
+
+### Measurements
+
+- latency
+- jitter
+- throughput
+- delivery ratio
+- packet loss
+
+---
+
+## 5) Repository structure
+
+- `backend/` - FastAPI app and API routes
+- `dashboard/` - Streamlit UI
+- `controller/` - routing, QoS, congestion, topology, flow logic
+- `simulation/` - network model and event simulation
+- `traffic_generator/` - deterministic workload generators
+- `monitoring/` - metric collection/analysis modules
+- `experiments/` - scenario runners and exports
+- `tests/` - pytest test suite
+- `scripts/` - setup/start/stop/experiment PowerShell scripts
+- `results/` - generated output artifacts
+- `docs/` - architecture, algorithm, test and demo documentation
+
+---
+
+## 6) Prerequisites
+
+- Windows 10/11
 - Python **3.11**
+- PowerShell
 
-Core dependencies are listed in `requirements.txt` (FastAPI, Uvicorn, Streamlit, NetworkX, NumPy, Pandas, Plotly, Pytest).
+Dependencies are defined in `requirements.txt`.
 
-## Quick start (Windows PowerShell)
+---
 
-From the project root:
+## 7) Quick start (recommended)
+
+Run from project root:
 
 ```powershell
 .\scripts\setup_windows.ps1
 .\scripts\start_project.ps1
 ```
 
-Open:
+Then open:
 
-- API docs: http://localhost:8000/docs
-- Dashboard: http://localhost:8501
+- **API Docs:** http://localhost:8000/docs
+- **Dashboard:** http://localhost:8501
 
-To stop both services:
+Stop services:
 
 ```powershell
 .\scripts\stop_project.ps1
 ```
 
-## Manual run (optional)
+---
 
-If you prefer manual commands:
+## 8) Manual start (optional)
 
 ```powershell
 .\.venv\Scripts\python.exe -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
 .\.venv\Scripts\python.exe -m streamlit run dashboard/app.py --server.port 8501
 ```
 
-## API highlights
+---
 
-Main endpoints (prefix: `/api`):
+## 9) API overview
 
-- `GET /status` - controller/simulation state and active path
-- `GET /topology` - current simulated topology
-- `GET /switches` - queue lengths, received, dropped
-- `GET /traffic-classes` - class mapping and DSCP details
-- `GET /qos` - QoS state and policies
-- `GET /metrics` - latest measured metrics
-- `GET /events` - controller and simulation events
-- `POST /simulation/start` - run simulation workload
-- `POST /congestion/start` - force/test congestion state
-- `POST /failover` - trigger primary-link failover
-- `POST /experiments/run` - run full experiment suite
+Base path: `/api`
 
-## Dashboard usage
+- `GET /status` - controller + simulation status
+- `GET /topology` - current topology details
+- `GET /switches` - queue statistics per switch
+- `GET /traffic-classes` - DSCP/class mapping
+- `GET /qos` - active QoS state and policies
+- `GET /metrics` - latest aggregated metrics
+- `GET /events` - controller/simulator event logs
+- `POST /simulation/start` - launch workload simulation
+- `POST /congestion/start` - inject/test congestion state
+- `POST /failover` - trigger route failover
+- `POST /experiments/run` - execute all experiment scenarios
 
-The dashboard provides:
+---
 
-- live status and topology views
-- QoS and congestion controls
-- failover action and event monitoring
-- custom simulation form (duration, packet rates/sizes, baseline/proposed mode)
-- experiment analytics and result charts
+## 10) Dashboard highlights
 
-## Experiments
+- Topology and status monitoring
+- QoS and congestion control toggles
+- Failover trigger and event tracking
+- Custom simulation configuration (duration/rates/sizes/mode)
+- Performance analytics and downloadable results
 
-Run all scenarios:
+---
+
+## 11) Experiments
+
+Run full experiment suite:
 
 ```powershell
 .\scripts\run_experiments.ps1
 ```
 
-Scenarios include:
+Scenarios:
 
 1. `S1_normal`
 2. `S2_bulk_congestion`
@@ -122,34 +163,48 @@ Scenarios include:
 4. `S4_primary_failure`
 5. `S5_scalability`
 
-Each scenario runs in both `baseline` and `proposed` modes and exports:
+For every scenario, both **baseline** and **proposed** modes are executed.
+
+Generated outputs:
 
 - `results/experiment_results.csv`
 - `results/experiment_results.json`
-- selected chart files in `results/*.html`
+- `results/*.html` (selected visualizations)
 
-## Testing
+---
+
+## 12) Testing and validation
 
 ```powershell
 python -m pytest tests -v
 python -m compileall .
 ```
 
-## Important limitations
+---
 
-- This is a compact **discrete-event simulation**, not a real-time production controller
+## 13) Known limitations
+
+- Simulation model is simplified for academic/case-study use
+- Not a production SDN controller or real-time robotics safety system
 - Traffic generation is deterministic periodic workload generation
-- QoS, admission, and control policies are intentionally simplified for case-study clarity
-- Dashboard and API run as separate processes and keep separate in-memory controller instances
-- Metrics are simulation outputs, not physical network measurements
+- Dashboard and API maintain separate in-memory controller instances
+- Results are simulated observations, not physical network benchmarks
 
-## Documentation
+---
 
-See `docs/` for additional details:
+## 14) Additional documentation
 
-- architecture
+Refer to `docs/` for:
+
+- architecture details
 - algorithm notes
-- demo mode
 - implementation guide
 - testing guide
+- demo mode
 - viva questions
+
+---
+
+## 15) License and usage
+
+This repository is intended for educational and research demonstration purposes.
